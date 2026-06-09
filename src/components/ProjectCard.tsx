@@ -1,113 +1,88 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Calendar, Layers, Users, Building2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Calendar, Sparkles, Tag } from "lucide-react";
 import type { Project } from "@/data/projects";
 
 interface Props {
   project: Project & { dateAdded: string };
-  variant?: "card" | "compact" | "bento";
-  onClick?: () => void;
+  variant?: "card" | "bento";
+  onOpen: () => void;
 }
 
-const trackColor: Record<string, string> = {
+const trackStyle: Record<string, string> = {
   business: "bg-blue-100 text-blue-800 border-blue-200",
   enterprise: "bg-indigo-100 text-indigo-800 border-indigo-200",
   engineering: "bg-sky-100 text-sky-800 border-sky-200",
 };
 
-export function ProjectCard({ project, variant = "card", onClick }: Props) {
-  const compact = variant === "compact";
+export function ProjectCard({ project, variant = "card", onOpen }: Props) {
   const bento = variant === "bento";
 
   return (
     <Card
-      onClick={onClick}
-      className={`card-surface hover-lift cursor-pointer overflow-hidden border-border/60 ${
-        bento ? "p-5 h-full" : "p-5"
-      }`}
+      onClick={onOpen}
+      className="card-surface hover-lift cursor-pointer overflow-hidden border-border/60 p-5 h-full flex flex-col group relative"
     >
+      <div
+        className="absolute inset-x-0 top-0 h-1 opacity-70"
+        style={{ background: "var(--gradient-brand)" }}
+      />
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="min-w-0">
-          <h3 className={`font-semibold tracking-tight ${bento ? "text-xl" : "text-lg"} gradient-text`}>
+        <div className="min-w-0 flex-1">
+          <h3 className={`font-semibold tracking-tight gradient-text ${bento ? "text-xl" : "text-lg"}`}>
             {project.name}
           </h3>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            <Badge variant="outline" className={trackColor[project.track] ?? ""}>
-              {project.track}
-            </Badge>
-            <Badge variant="secondary" className="capitalize">
-              {project.primaryCategory}
-            </Badge>
+          {!bento && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <Badge variant="outline" className={trackStyle[project.track] ?? ""}>
+                {project.track}
+              </Badge>
+              <Badge variant="secondary" className="capitalize">
+                {project.primaryCategory}
+              </Badge>
+            </div>
+          )}
+        </div>
+        {!bento && (
+          <div className="text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+            <Calendar className="h-3 w-3" /> {project.dateAdded}
           </div>
-        </div>
-        <div className="text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
-          <Calendar className="h-3 w-3" /> {project.dateAdded}
-        </div>
+        )}
       </div>
 
-      <p className={`text-sm text-muted-foreground ${compact ? "line-clamp-3" : ""}`}>
+      <p className={`text-sm text-muted-foreground ${bento ? "line-clamp-4" : "line-clamp-3"}`}>
         {project.shortDescription}
       </p>
 
-      {!compact && (
-        <>
-          <div className="mt-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-primary" /> Features
-            </div>
-            <ol className="space-y-1.5 list-decimal list-inside text-sm text-foreground/85">
-              {project.features.map((f, i) => (
-                <li key={i} className="leading-snug">{f}</li>
-              ))}
-            </ol>
-          </div>
+      {!bento && project.secondaryCategories?.length ? (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {project.secondaryCategories.slice(0, 4).map((s) => (
+            <span key={s} className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
+              <Tag className="h-2.5 w-2.5" />{s}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
-          <div className="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
-            <Section icon={<Users className="h-3.5 w-3.5" />} title="Stakeholders" items={project.requirements?.stakeholders} />
-            <Section icon={<Users className="h-3.5 w-3.5" />} title="End Users" items={project.requirements?.endUsers} />
-            <Section icon={<Building2 className="h-3.5 w-3.5" />} title="Operational" items={project.requirements?.operational} />
-            <Section icon={<Building2 className="h-3.5 w-3.5" />} title="Regulatory" items={project.requirements?.regulatory} />
-          </div>
-
-          <div className="mt-4">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 mb-2">
-              <Layers className="h-3.5 w-3.5 text-primary" /> Impact
-            </div>
-            <div className="grid sm:grid-cols-2 gap-2 text-xs">
-              {(["social", "economic", "environmental", "technological"] as const).map((k) =>
-                project.impact?.[k] ? (
-                  <div key={k} className="rounded-md border border-border/60 bg-secondary/40 p-2">
-                    <div className="font-medium capitalize text-foreground/80">{k}</div>
-                    <div className="text-muted-foreground">{project.impact[k]}</div>
-                  </div>
-                ) : null,
-              )}
-            </div>
-          </div>
-
-          {project.secondaryCategories?.length ? (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {project.secondaryCategories.map((s) => (
-                <Badge key={s} variant="outline" className="capitalize text-[10px]">{s}</Badge>
-              ))}
-            </div>
-          ) : null}
-        </>
+      {!bento && (
+        <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          {project.features?.length ?? 0} features · {(project.requirements?.stakeholders?.length ?? 0)} stakeholders
+        </div>
       )}
-    </Card>
-  );
-}
 
-function Section({ icon, title, items }: { icon: React.ReactNode; title: string; items?: string[] }) {
-  if (!items?.length) return null;
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80 mb-1">
-        {icon} {title}
+      <div className="mt-auto pt-4">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="w-full justify-between group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+          onClick={(e) => { e.stopPropagation(); onOpen(); }}
+        >
+          View details
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Button>
       </div>
-      <ul className="list-disc list-inside text-xs text-muted-foreground space-y-0.5">
-        {items.map((it, i) => (<li key={i}>{it}</li>))}
-      </ul>
-    </div>
+    </Card>
   );
 }
