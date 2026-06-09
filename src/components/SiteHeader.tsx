@@ -19,8 +19,6 @@ export function SiteHeader() {
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm">
           <a href="#explore" className="text-muted-foreground hover:text-foreground transition-colors">Explore</a>
-          <a href="#courses" className="text-muted-foreground hover:text-foreground transition-colors">By Course</a>
-          <a href="#tags" className="text-muted-foreground hover:text-foreground transition-colors">Tag Cloud</a>
         </nav>
       </div>
     </header>

@@ -3,14 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   PROJECTS,
   PRIMARY_CATEGORIES,
+  SECONDARY_CATEGORIES,
   TRACKS,
-  COURSE_CATEGORIES,
-  projectsForCourse,
   type Project,
 } from "@/data/projects";
 import { RotatingBackdrop } from "@/components/RotatingBackdrop";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ProjectCard } from "@/components/ProjectCard";
+import { ProjectDetails } from "@/components/ProjectDetails";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,74 +27,85 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious,
-} from "@/components/ui/carousel";
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import {
-  Search, X, LayoutGrid, List as ListIcon, Table2, Tag, GraduationCap, Rows3,
+  Search, X, LayoutGrid, Table2, Rows3, SlidersHorizontal, ChevronRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Project Ideas Hub — 200+ Real-World Project Briefs for Learners & Teachers" },
-      { name: "description", content: "Browse a curated hub of full-spec project ideas spanning AI, web, mobile, security, databases, networking, and engineering — built for teachers, students and developers." },
+      { title: "Project Ideas Hub — 313 Real-World Project Briefs" },
+      { name: "description", content: "Searchable hub of fully-specified project ideas across AI, web, mobile, security, databases and more — for teachers, students and builders." },
       { property: "og:title", content: "Project Ideas Hub" },
-      { property: "og:description", content: "A searchable hub of full-spec project briefs across every major CS course." },
+      { property: "og:description", content: "Browse 313 curated, course-aligned project briefs." },
     ],
   }),
   component: Index,
 });
 
-type ViewMode = "list" | "table" | "bento" | "carousel" | "tags" | "courses";
+type ViewMode = "card" | "table" | "bento";
+const PAGE_SIZES = [12, 24, 48, 96];
 
-const PAGE_SIZES = [6, 12, 24, 48, 96];
+type DetailItem = Project & { dateAdded: string };
 
 function Index() {
   const [query, setQuery] = useState("");
-  const [selectedCats, setSelectedCats] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [track, setTrack] = useState<string>("all");
-  const [view, setView] = useState<ViewMode>("bento");
+  const [view, setView] = useState<ViewMode>("card");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(12);
-  const [open, setOpen] = useState<(Project & { dateAdded: string }) | null>(null);
-  const [activeCourse, setActiveCourse] = useState<string>(COURSE_CATEGORIES[0].id);
+  const [pageSize, setPageSize] = useState(24);
+  const [open, setOpen] = useState<DetailItem | null>(null);
+
+  const allTags = useMemo(
+    () => Array.from(new Set([...PRIMARY_CATEGORIES, ...SECONDARY_CATEGORIES])).sort(),
+    [],
+  );
+
+  // multi-token, multi-field search (space = AND, comma = OR within token)
+  const tokens = useMemo(() => {
+    return query
+      .toLowerCase()
+      .split(/\s+/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((t) => t.split(",").map((s) => s.trim()).filter(Boolean));
+  }, [query]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     return PROJECTS.filter((p) => {
       if (track !== "all" && p.track !== track) return false;
-      if (selectedCats.length) {
-        const all = [p.primaryCategory, ...(p.secondaryCategories ?? [])];
-        if (!selectedCats.some((c) => all.includes(c))) return false;
+      if (selectedTags.length) {
+        const tags = [p.primaryCategory, ...(p.secondaryCategories ?? [])];
+        if (!selectedTags.every((t) => tags.includes(t))) return false;
       }
-      if (!q) return true;
+      if (!tokens.length) return true;
       const blob = [
-        p.name, p.shortDescription, p.primaryCategory,
+        p.name, p.shortDescription, p.primaryCategory, p.track,
         ...(p.secondaryCategories ?? []),
         ...(p.features ?? []),
+        ...(p.requirements?.stakeholders ?? []),
+        ...(p.requirements?.endUsers ?? []),
+        ...(p.requirements?.operational ?? []),
+        ...(p.requirements?.regulatory ?? []),
+        p.impact?.social ?? "", p.impact?.economic ?? "",
+        p.impact?.environmental ?? "", p.impact?.technological ?? "",
       ].join(" ").toLowerCase();
-      return blob.includes(q);
+      return tokens.every((alts) => alts.some((a) => blob.includes(a)));
     });
-  }, [query, selectedCats, track]);
+  }, [tokens, selectedTags, track]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const slice = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const toggleCat = (c: string) => {
+  const toggleTag = (t: string) => {
     setPage(1);
-    setSelectedCats((cur) => cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]);
+    setSelectedTags((cur) => cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]);
   };
-
-  const tagCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    PROJECTS.forEach((p) => {
-      [p.primaryCategory, ...(p.secondaryCategories ?? [])].forEach((t) => {
-        m.set(t, (m.get(t) ?? 0) + 1);
-      });
-    });
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
-  }, []);
+  const clearAll = () => { setQuery(""); setSelectedTags([]); setTrack("all"); setPage(1); };
 
   return (
     <div className="min-h-screen relative">
@@ -105,7 +116,7 @@ function Index() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 gradient-hero opacity-90" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_0%,oklch(1_0_0/0.35),transparent_70%)]" />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center text-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center text-white">
           <Badge className="bg-white/15 text-white border-white/30 backdrop-blur mb-4">
             {PROJECTS.length} curated project briefs
           </Badge>
@@ -113,7 +124,7 @@ function Index() {
             Build something <span className="italic">real</span>.
           </h1>
           <p className="mt-5 max-w-2xl mx-auto text-white/85 text-lg">
-            A hub of fully-specified, course-aligned project ideas — with stakeholders, features, impact and requirements — for teachers, students, learners and developers.
+            A searchable hub of fully-specified project ideas for teachers, students and developers.
           </p>
           <div className="mt-8 max-w-2xl mx-auto">
             <div className="flex items-center gap-2 bg-white/95 text-foreground rounded-2xl shadow-2xl p-2">
@@ -121,7 +132,7 @@ function Index() {
               <Input
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-                placeholder="Search by name, feature, stakeholder, category…"
+                placeholder="Search by name, feature, stakeholder, impact… (space = AND, comma = OR)"
                 className="border-0 focus-visible:ring-0 shadow-none text-base h-11 bg-transparent"
               />
               {query && (
@@ -130,14 +141,22 @@ function Index() {
                 </Button>
               )}
             </div>
+            <div className="mt-3 flex items-center justify-center gap-2 flex-wrap text-xs">
+              <span className="text-white/70">Try:</span>
+              {["ai", "blockchain", "mobile, web", "supply chain", "farmer", "privacy"].map((s) => (
+                <button key={s} onClick={() => { setQuery(s); setPage(1); }} className="px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20">
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <main id="explore" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      <main id="explore" className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
         {/* Filter bar */}
         <div className="card-surface rounded-2xl p-4 md:p-5 border border-border/60">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Track</span>
             <div className="flex gap-1.5 flex-wrap">
               {(["all", ...TRACKS] as const).map((t) => (
@@ -152,6 +171,41 @@ function Index() {
                 </Button>
               ))}
             </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1.5">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Tags {selectedTags.length > 0 && <Badge variant="secondary" className="ml-1">{selectedTags.length}</Badge>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[320px] max-h-[420px] overflow-y-auto p-3">
+                <div className="text-xs font-semibold mb-2 text-muted-foreground">Filter by tag (AND)</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {allTags.map((t) => {
+                    const active = selectedTags.includes(t);
+                    return (
+                      <button
+                        key={t}
+                        onClick={() => toggleTag(t)}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-all capitalize ${
+                          active ? "bg-primary text-primary-foreground border-primary" : "bg-background hover:bg-accent border-border"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {(selectedTags.length > 0 || query || track !== "all") && (
+              <Button size="sm" variant="ghost" onClick={clearAll} className="text-destructive">
+                <X className="h-3.5 w-3.5 mr-1" /> Clear all
+              </Button>
+            )}
+
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Page size</span>
               <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
@@ -162,70 +216,52 @@ function Index() {
               </Select>
             </div>
           </div>
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categories</span>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {PRIMARY_CATEGORIES.map((c) => {
-                const active = selectedCats.includes(c);
-                return (
-                  <button
-                    key={c}
-                    onClick={() => toggleCat(c)}
-                    className={`text-xs px-3 py-1.5 rounded-full border transition-all capitalize ${
-                      active
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-background hover:bg-accent border-border text-foreground/80"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
-              {selectedCats.length > 0 && (
+
+          {selectedTags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {selectedTags.map((t) => (
                 <button
-                  onClick={() => setSelectedCats([])}
-                  className="text-xs px-3 py-1.5 rounded-full border border-destructive/30 text-destructive hover:bg-destructive/10"
+                  key={t}
+                  onClick={() => toggleTag(t)}
+                  className="text-xs px-2.5 py-1 rounded-full bg-primary text-primary-foreground inline-flex items-center gap-1 capitalize"
                 >
-                  Clear ({selectedCats.length})
+                  {t} <X className="h-3 w-3" />
                 </button>
-              )}
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* View tabs */}
         <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <TabsList className="bg-secondary/70 backdrop-blur">
-              <TabsTrigger value="bento"><LayoutGrid className="h-4 w-4 mr-1.5" />Bento</TabsTrigger>
-              <TabsTrigger value="list"><ListIcon className="h-4 w-4 mr-1.5" />List</TabsTrigger>
+              <TabsTrigger value="card"><LayoutGrid className="h-4 w-4 mr-1.5" />Card</TabsTrigger>
+              <TabsTrigger value="bento"><Rows3 className="h-4 w-4 mr-1.5" />Bento</TabsTrigger>
               <TabsTrigger value="table"><Table2 className="h-4 w-4 mr-1.5" />Table</TabsTrigger>
-              <TabsTrigger value="carousel"><Rows3 className="h-4 w-4 mr-1.5" />Carousel</TabsTrigger>
-              <TabsTrigger value="tags"><Tag className="h-4 w-4 mr-1.5" />Tag Cloud</TabsTrigger>
-              <TabsTrigger value="courses"><GraduationCap className="h-4 w-4 mr-1.5" />By Course</TabsTrigger>
             </TabsList>
             <div className="text-sm text-muted-foreground">
               {filtered.length} of {PROJECTS.length} projects
             </div>
           </div>
 
-          {/* BENTO */}
-          <TabsContent value="bento" className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 auto-rows-fr">
-              {slice.map((p, i) => (
-                <div key={p.id} className={i % 7 === 0 ? "sm:col-span-2 lg:row-span-2" : ""}>
-                  <ProjectCard project={p} variant="bento" onClick={() => setOpen(p)} />
-                </div>
+          {/* CARD (default) */}
+          <TabsContent value="card" className="mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {slice.map((p) => (
+                <ProjectCard key={p.id} project={p} variant="card" onOpen={() => setOpen(p)} />
               ))}
             </div>
             <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
           </TabsContent>
 
-          {/* LIST */}
-          <TabsContent value="list" className="mt-6">
-            <div className="grid gap-4">
-              {slice.map((p) => (
-                <ProjectCard key={p.id} project={p} onClick={() => setOpen(p)} />
+          {/* BENTO — name + short desc only */}
+          <TabsContent value="bento" className="mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
+              {slice.map((p, i) => (
+                <div key={p.id} className={i % 9 === 0 ? "sm:col-span-2 lg:row-span-2" : ""}>
+                  <ProjectCard project={p} variant="bento" onOpen={() => setOpen(p)} />
+                </div>
               ))}
             </div>
             <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
@@ -239,9 +275,9 @@ function Index() {
                   <TableRow>
                     <TableHead>Project</TableHead>
                     <TableHead>Track</TableHead>
-                    <TableHead>Primary Category</TableHead>
-                    <TableHead>Secondary</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Primary</TableHead>
+                    <TableHead className="hidden md:table-cell">Tags</TableHead>
+                    <TableHead className="text-right">Details</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -253,8 +289,12 @@ function Index() {
                       </TableCell>
                       <TableCell><Badge variant="outline" className="capitalize">{p.track}</Badge></TableCell>
                       <TableCell className="capitalize">{p.primaryCategory}</TableCell>
-                      <TableCell className="text-xs">{(p.secondaryCategories ?? []).join(", ")}</TableCell>
-                      <TableCell className="text-xs whitespace-nowrap">{p.dateAdded}</TableCell>
+                      <TableCell className="hidden md:table-cell text-xs capitalize text-muted-foreground">
+                        {(p.secondaryCategories ?? []).join(", ")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <ChevronRight className="inline h-4 w-4 text-muted-foreground" />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -262,70 +302,15 @@ function Index() {
             </div>
             <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
           </TabsContent>
-
-          {/* CAROUSEL */}
-          <TabsContent value="carousel" className="mt-6">
-            <Carousel opts={{ align: "start" }} className="w-full">
-              <CarouselContent>
-                {filtered.map((p) => (
-                  <CarouselItem key={p.id} className="md:basis-1/2 lg:basis-1/3">
-                    <ProjectCard project={p} variant="compact" onClick={() => setOpen(p)} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          </TabsContent>
-
-          {/* TAG CLOUD */}
-          <TabsContent value="tags" id="tags" className="mt-6">
-            <div className="card-surface rounded-2xl p-6 border border-border/60">
-              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Searchable tag cloud — click to filter</h3>
-              <div className="flex flex-wrap gap-2">
-                {tagCounts
-                  .filter(([t]) => !query || t.toLowerCase().includes(query.toLowerCase()))
-                  .map(([t, n]) => {
-                    const size = Math.min(2.4, 0.85 + n * 0.04);
-                    const active = selectedCats.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        onClick={() => toggleCat(t)}
-                        className={`px-3 py-1.5 rounded-full border transition-all capitalize ${
-                          active ? "bg-primary text-primary-foreground border-primary" : "hover:bg-accent border-border"
-                        }`}
-                        style={{ fontSize: `${size * 0.7}rem` }}
-                      >
-                        {t} <span className="opacity-60">·{n}</span>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {slice.map((p) => <ProjectCard key={p.id} project={p} variant="compact" onClick={() => setOpen(p)} />)}
-            </div>
-            <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
-          </TabsContent>
-
-          {/* COURSES */}
-          <TabsContent value="courses" id="courses" className="mt-6">
-            <div className="flex flex-wrap gap-2 mb-5">
-              {COURSE_CATEGORIES.map((c) => (
-                <Button
-                  key={c.id}
-                  variant={activeCourse === c.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveCourse(c.id)}
-                >
-                  {c.label}
-                </Button>
-              ))}
-            </div>
-            <CourseGrid courseId={activeCourse} onOpen={setOpen} />
-          </TabsContent>
         </Tabs>
+
+        {filtered.length === 0 && (
+          <div className="card-surface rounded-2xl p-10 text-center border border-border/60">
+            <div className="text-lg font-semibold mb-1">No projects match</div>
+            <div className="text-sm text-muted-foreground">Try clearing filters or a different search term.</div>
+            <Button className="mt-4" onClick={clearAll}>Clear filters</Button>
+          </div>
+        )}
       </main>
 
       <footer className="border-t border-border/60 mt-16 py-8 text-center text-xs text-muted-foreground">
@@ -333,29 +318,15 @@ function Index() {
       </footer>
 
       <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          {open && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl gradient-text">{open.name}</DialogTitle>
-              </DialogHeader>
-              <ProjectCard project={open} />
-            </>
-          )}
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto p-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{open?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="p-6">
+            {open && <ProjectDetails project={open} />}
+          </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function CourseGrid({ courseId, onOpen }: { courseId: string; onOpen: (p: Project & { dateAdded: string }) => void }) {
-  const list = useMemo(() => projectsForCourse(courseId) as (Project & { dateAdded: string })[], [courseId]);
-  if (!list.length) {
-    return <div className="text-sm text-muted-foreground p-6 text-center">No projects matched this course yet.</div>;
-  }
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {list.slice(0, 24).map((p) => <ProjectCard key={p.id} project={p} variant="compact" onClick={() => onOpen(p)} />)}
     </div>
   );
 }
