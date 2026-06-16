@@ -349,7 +349,7 @@ function Index() {
             <DialogTitle>{open?.name}</DialogTitle>
           </DialogHeader>
           <div className="p-6">
-            {open && <ProjectDetails project={open} />}
+            {open && <ProjectDetails project={open} gradient={gradientFor(open.id ?? open.name)} />}
           </div>
         </DialogContent>
       </Dialog>
