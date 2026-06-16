@@ -56,7 +56,7 @@ export function ProjectDetails({ project, gradient }: { project: Project & { dat
               className="flex gap-3 p-3 rounded-lg bg-secondary/40 border border-border/40 hover:bg-secondary transition-colors animate-in fade-in slide-in-from-left-2"
               style={{ animationDelay: `${i * 40}ms`, animationFillMode: "backwards" }}
             >
-              <span className="flex-none h-7 w-7 rounded-md grid place-items-center text-xs font-bold text-primary-foreground" style={{ background: "var(--gradient-brand)" }}>
+              <span className="flex-none h-7 w-7 rounded-md grid place-items-center text-xs font-bold text-white" style={{ backgroundImage: g.bar }}>
                 {i + 1}
               </span>
               <span className="text-sm leading-snug">{f}</span>
