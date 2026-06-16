@@ -20,11 +20,14 @@ const impactIcons = {
   technological: Cpu,
 } as const;
 
-export function ProjectDetails({ project }: { project: Project & { dateAdded: string } }) {
+type Gradient = { bar: string; text: string; ring: string };
+
+export function ProjectDetails({ project, gradient }: { project: Project & { dateAdded: string }; gradient?: Gradient }) {
+  const g: Gradient = gradient ?? { bar: "linear-gradient(90deg,#6366f1,#ec4899)", text: "linear-gradient(90deg,#6366f1,#ec4899)", ring: "rgba(99,102,241,0.35)" };
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
       {/* Header */}
-      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "var(--gradient-brand)" }}>
+      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ backgroundImage: g.bar }}>
         <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <h2 className="text-3xl font-bold tracking-tight">{project.name}</h2>
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -53,7 +56,7 @@ export function ProjectDetails({ project }: { project: Project & { dateAdded: st
               className="flex gap-3 p-3 rounded-lg bg-secondary/40 border border-border/40 hover:bg-secondary transition-colors animate-in fade-in slide-in-from-left-2"
               style={{ animationDelay: `${i * 40}ms`, animationFillMode: "backwards" }}
             >
-              <span className="flex-none h-7 w-7 rounded-md grid place-items-center text-xs font-bold text-primary-foreground" style={{ background: "var(--gradient-brand)" }}>
+              <span className="flex-none h-7 w-7 rounded-md grid place-items-center text-xs font-bold text-white" style={{ backgroundImage: g.bar }}>
                 {i + 1}
               </span>
               <span className="text-sm leading-snug">{f}</span>

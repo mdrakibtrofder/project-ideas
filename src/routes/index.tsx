@@ -119,7 +119,7 @@ function Index() {
             Curated project briefs
           </Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight drop-shadow-lg">
-            Build something <span className="italic bg-gradient-to-r from-pink-300 via-yellow-200 to-cyan-200 bg-clip-text text-transparent">real</span>.
+            Build something real.
           </h1>
           <p className="mt-5 max-w-2xl mx-auto text-white/90 text-lg drop-shadow">
             A searchable hub of fully-specified project ideas for teachers, students and developers.
@@ -349,7 +349,7 @@ function Index() {
             <DialogTitle>{open?.name}</DialogTitle>
           </DialogHeader>
           <div className="p-6">
-            {open && <ProjectDetails project={open} />}
+            {open && <ProjectDetails project={open} gradient={gradientFor(open.id ?? open.name)} />}
           </div>
         </DialogContent>
       </Dialog>
