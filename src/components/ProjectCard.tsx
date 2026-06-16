@@ -3,10 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Sparkles, Tag } from "lucide-react";
 import type { Project } from "@/data/projects";
+import { gradientFor } from "@/lib/cardGradients";
 
 interface Props {
   project: Project & { dateAdded: string };
-  variant?: "card" | "bento";
+  variant?: "card";
   onOpen: () => void;
 }
 
@@ -16,46 +17,53 @@ const trackStyle: Record<string, string> = {
   engineering: "bg-sky-100 text-sky-800 border-sky-200",
 };
 
-export function ProjectCard({ project, variant = "card", onOpen }: Props) {
-  const bento = variant === "bento";
-
+export function ProjectCard({ project, onOpen }: Props) {
+  const g = gradientFor(project.id ?? project.name);
   return (
     <Card
       onClick={onOpen}
-      className="card-surface hover-lift cursor-pointer overflow-hidden border-border/60 p-5 h-full flex flex-col group relative"
+      className="card-surface hover-lift cursor-pointer overflow-hidden p-5 h-full flex flex-col group relative border"
+      style={{
+        borderColor: "transparent",
+        backgroundImage: `linear-gradient(var(--card),var(--card)), ${g.bar}`,
+        backgroundOrigin: "border-box",
+        backgroundClip: "padding-box, border-box",
+        boxShadow: `0 8px 30px -12px ${g.ring}`,
+      }}
     >
-      <div
-        className="absolute inset-x-0 top-0 h-1 opacity-70"
-        style={{ background: "var(--gradient-brand)" }}
-      />
+      <div className="absolute inset-x-0 top-0 h-1" style={{ background: g.bar }} />
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0 flex-1">
-          <h3 className={`font-semibold tracking-tight gradient-text ${bento ? "text-xl" : "text-lg"}`}>
+          <h3
+            className="font-semibold tracking-tight text-lg"
+            style={{
+              backgroundImage: g.text,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
             {project.name}
           </h3>
-          {!bento && (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <Badge variant="outline" className={trackStyle[project.track] ?? ""}>
-                {project.track}
-              </Badge>
-              <Badge variant="secondary" className="capitalize">
-                {project.primaryCategory}
-              </Badge>
-            </div>
-          )}
-        </div>
-        {!bento && (
-          <div className="text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> {project.dateAdded}
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <Badge variant="outline" className={trackStyle[project.track] ?? ""}>
+              {project.track}
+            </Badge>
+            <Badge variant="secondary" className="capitalize">
+              {project.primaryCategory}
+            </Badge>
           </div>
-        )}
+        </div>
+        <div className="text-[11px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+          <Calendar className="h-3 w-3" /> {project.dateAdded}
+        </div>
       </div>
 
-      <p className={`text-sm text-muted-foreground ${bento ? "line-clamp-4" : "line-clamp-3"}`}>
+      <p className="text-sm text-muted-foreground line-clamp-3">
         {project.shortDescription}
       </p>
 
-      {!bento && project.secondaryCategories?.length ? (
+      {project.secondaryCategories?.length ? (
         <div className="mt-3 flex flex-wrap gap-1">
           {project.secondaryCategories.slice(0, 4).map((s) => (
             <span key={s} className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
@@ -65,18 +73,17 @@ export function ProjectCard({ project, variant = "card", onOpen }: Props) {
         </div>
       ) : null}
 
-      {!bento && (
-        <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          {project.features?.length ?? 0} features · {(project.requirements?.stakeholders?.length ?? 0)} stakeholders
-        </div>
-      )}
+      <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1.5">
+        <Sparkles className="h-3.5 w-3.5" />
+        {project.features?.length ?? 0} features · {(project.requirements?.stakeholders?.length ?? 0)} stakeholders
+      </div>
 
       <div className="mt-auto pt-4">
         <Button
           size="sm"
           variant="ghost"
-          className="w-full justify-between group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+          className="w-full justify-between transition-colors"
+          style={{ color: "white", backgroundImage: g.bar }}
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
         >
           View details
