@@ -1,29 +1,27 @@
 import { useEffect, useState } from "react";
+import bg1 from "@/assets/bg1.jpg";
+import bg2 from "@/assets/bg2.jpg";
+import bg3 from "@/assets/bg3.jpg";
+import bg4 from "@/assets/bg4.jpg";
+import bg5 from "@/assets/bg5.jpg";
 
-const SLIDES = [
-  "linear-gradient(135deg, oklch(0.55 0.20 250) 0%, oklch(0.65 0.18 220) 50%, oklch(0.78 0.14 200) 100%)",
-  "linear-gradient(135deg, oklch(0.42 0.18 265) 0%, oklch(0.58 0.20 240) 50%, oklch(0.72 0.16 210) 100%)",
-  "linear-gradient(135deg, oklch(0.50 0.22 245) 0%, oklch(0.62 0.17 215) 50%, oklch(0.80 0.12 195) 100%)",
-  "linear-gradient(135deg, oklch(0.38 0.16 270) 0%, oklch(0.55 0.20 245) 50%, oklch(0.70 0.16 220) 100%)",
-  "linear-gradient(135deg, oklch(0.45 0.20 255) 0%, oklch(0.60 0.18 225) 50%, oklch(0.76 0.13 205) 100%)",
-  "linear-gradient(135deg, oklch(0.48 0.19 248) 0%, oklch(0.66 0.18 218) 50%, oklch(0.82 0.10 198) 100%)",
-];
+const SLIDES = [bg1, bg2, bg3, bg4, bg5];
 
 export function RotatingBackdrop() {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % SLIDES.length), 6000);
+    const t = setInterval(() => setI((v) => (v + 1) % SLIDES.length), 5500);
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {SLIDES.map((bg, idx) => (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {SLIDES.map((src, idx) => (
         <div
           key={idx}
-          className="absolute inset-0 transition-opacity duration-[2000ms]"
+          className="absolute inset-0 transition-opacity duration-[1800ms] bg-center bg-cover"
           style={{
-            background: bg,
-            opacity: i === idx ? 0.18 : 0,
+            backgroundImage: `url(${src})`,
+            opacity: i === idx ? 0.28 : 0,
           }}
         />
       ))}
@@ -31,7 +29,7 @@ export function RotatingBackdrop() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(80% 50% at 50% 0%, oklch(1 0 0 / 0.6) 0%, transparent 70%), linear-gradient(180deg, transparent 0%, oklch(0.99 0.01 240) 80%)",
+            "linear-gradient(180deg, oklch(0.22 0.08 260 / 0.55) 0%, oklch(0.22 0.08 260 / 0.35) 60%, oklch(0.99 0.01 240) 100%)",
         }}
       />
     </div>

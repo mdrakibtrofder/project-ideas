@@ -11,6 +11,7 @@ import { RotatingBackdrop } from "@/components/RotatingBackdrop";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ProjectCard } from "@/components/ProjectCard";
 import { ProjectDetails } from "@/components/ProjectDetails";
+import { gradientFor } from "@/lib/cardGradients";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,22 +31,22 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Search, X, LayoutGrid, Table2, Rows3, SlidersHorizontal, ChevronRight,
+  Search, X, LayoutGrid, Table2, SlidersHorizontal, Eye, Sparkles, Users,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Project Ideas Hub — 313 Real-World Project Briefs" },
+      { title: "Project Ideas Hub — Real-World Project Briefs" },
       { name: "description", content: "Searchable hub of fully-specified project ideas across AI, web, mobile, security, databases and more — for teachers, students and builders." },
       { property: "og:title", content: "Project Ideas Hub" },
-      { property: "og:description", content: "Browse 313 curated, course-aligned project briefs." },
+      { property: "og:description", content: "Browse curated, course-aligned project briefs." },
     ],
   }),
   component: Index,
 });
 
-type ViewMode = "card" | "table" | "bento";
+type ViewMode = "card" | "table";
 const PAGE_SIZES = [12, 24, 48, 96];
 
 type DetailItem = Project & { dateAdded: string };
@@ -64,7 +65,6 @@ function Index() {
     [],
   );
 
-  // multi-token, multi-field search (space = AND, comma = OR within token)
   const tokens = useMemo(() => {
     return query
       .toLowerCase()
@@ -109,21 +109,19 @@ function Index() {
 
   return (
     <div className="min-h-screen relative">
-      <RotatingBackdrop />
       <SiteHeader />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 gradient-hero opacity-90" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_0%,oklch(1_0_0/0.35),transparent_70%)]" />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center text-white">
+      {/* Hero with rotating image backdrop */}
+      <section className="relative overflow-hidden isolate">
+        <RotatingBackdrop />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center text-white">
           <Badge className="bg-white/15 text-white border-white/30 backdrop-blur mb-4">
-            {PROJECTS.length} curated project briefs
+            Curated project briefs
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-            Build something <span className="italic">real</span>.
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight drop-shadow-lg">
+            Build something real.
           </h1>
-          <p className="mt-5 max-w-2xl mx-auto text-white/85 text-lg">
+          <p className="mt-5 max-w-2xl mx-auto text-white/90 text-lg drop-shadow">
             A searchable hub of fully-specified project ideas for teachers, students and developers.
           </p>
           <div className="mt-8 max-w-2xl mx-auto">
@@ -142,7 +140,7 @@ function Index() {
               )}
             </div>
             <div className="mt-3 flex items-center justify-center gap-2 flex-wrap text-xs">
-              <span className="text-white/70">Try:</span>
+              <span className="text-white/80">Try:</span>
               {["ai", "blockchain", "mobile, web", "supply chain", "farmer", "privacy"].map((s) => (
                 <button key={s} onClick={() => { setQuery(s); setPage(1); }} className="px-2 py-0.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20">
                   {s}
@@ -234,34 +232,16 @@ function Index() {
 
         {/* View tabs */}
         <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <TabsList className="bg-secondary/70 backdrop-blur">
-              <TabsTrigger value="card"><LayoutGrid className="h-4 w-4 mr-1.5" />Card</TabsTrigger>
-              <TabsTrigger value="bento"><Rows3 className="h-4 w-4 mr-1.5" />Bento</TabsTrigger>
-              <TabsTrigger value="table"><Table2 className="h-4 w-4 mr-1.5" />Table</TabsTrigger>
-            </TabsList>
-            <div className="text-sm text-muted-foreground">
-              {filtered.length} of {PROJECTS.length} projects
-            </div>
-          </div>
+          <TabsList className="bg-secondary/70 backdrop-blur">
+            <TabsTrigger value="card"><LayoutGrid className="h-4 w-4 mr-1.5" />Card</TabsTrigger>
+            <TabsTrigger value="table"><Table2 className="h-4 w-4 mr-1.5" />Table</TabsTrigger>
+          </TabsList>
 
-          {/* CARD (default) */}
+          {/* CARD */}
           <TabsContent value="card" className="mt-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {slice.map((p) => (
-                <ProjectCard key={p.id} project={p} variant="card" onOpen={() => setOpen(p)} />
-              ))}
-            </div>
-            <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
-          </TabsContent>
-
-          {/* BENTO — name + short desc only */}
-          <TabsContent value="bento" className="mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
-              {slice.map((p, i) => (
-                <div key={p.id} className={i % 9 === 0 ? "sm:col-span-2 lg:row-span-2" : ""}>
-                  <ProjectCard project={p} variant="bento" onOpen={() => setOpen(p)} />
-                </div>
+                <ProjectCard key={p.id} project={p} onOpen={() => setOpen(p)} />
               ))}
             </div>
             <Pager page={safePage} totalPages={totalPages} setPage={setPage} />
@@ -272,31 +252,81 @@ function Index() {
             <div className="card-surface rounded-xl overflow-hidden border border-border/60">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Project</TableHead>
+                  <TableRow className="bg-secondary/60">
+                    <TableHead className="w-[44%]">Project</TableHead>
                     <TableHead>Track</TableHead>
-                    <TableHead>Primary</TableHead>
-                    <TableHead className="hidden md:table-cell">Tags</TableHead>
-                    <TableHead className="text-right">Details</TableHead>
+                    <TableHead>Primary category</TableHead>
+                    <TableHead className="hidden lg:table-cell">Tags</TableHead>
+                    <TableHead className="text-center hidden md:table-cell">
+                      <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />Feat.</span>
+                    </TableHead>
+                    <TableHead className="text-center hidden md:table-cell">
+                      <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />Stake.</span>
+                    </TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {slice.map((p) => (
-                    <TableRow key={p.id} className="cursor-pointer hover:bg-accent/40" onClick={() => setOpen(p)}>
-                      <TableCell>
-                        <div className="font-medium">{p.name}</div>
-                        <div className="text-xs text-muted-foreground line-clamp-2 max-w-md">{p.shortDescription}</div>
-                      </TableCell>
-                      <TableCell><Badge variant="outline" className="capitalize">{p.track}</Badge></TableCell>
-                      <TableCell className="capitalize">{p.primaryCategory}</TableCell>
-                      <TableCell className="hidden md:table-cell text-xs capitalize text-muted-foreground">
-                        {(p.secondaryCategories ?? []).join(", ")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <ChevronRight className="inline h-4 w-4 text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {slice.map((p) => {
+                    const g = gradientFor(p.id ?? p.name);
+                    return (
+                      <TableRow key={p.id} className="cursor-pointer hover:bg-accent/40" onClick={() => setOpen(p)}>
+                        <TableCell>
+                          <div className="flex gap-3">
+                            <span className="w-1 rounded-full shrink-0" style={{ background: g.bar }} />
+                            <div className="min-w-0">
+                              <div
+                                className="font-semibold"
+                                style={{
+                                  backgroundImage: g.text,
+                                  WebkitBackgroundClip: "text",
+                                  backgroundClip: "text",
+                                  color: "transparent",
+                                }}
+                              >
+                                {p.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground line-clamp-2 max-w-xl mt-0.5">
+                                {p.shortDescription}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell><Badge variant="outline" className="capitalize">{p.track}</Badge></TableCell>
+                        <TableCell className="capitalize text-sm">{p.primaryCategory}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="flex flex-wrap gap-1">
+                            {(p.secondaryCategories ?? []).slice(0, 3).map((s) => (
+                              <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground capitalize">
+                                {s}
+                              </span>
+                            ))}
+                            {(p.secondaryCategories?.length ?? 0) > 3 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                +{(p.secondaryCategories!.length - 3)}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center hidden md:table-cell tabular-nums text-sm">
+                          {p.features?.length ?? 0}
+                        </TableCell>
+                        <TableCell className="text-center hidden md:table-cell tabular-nums text-sm">
+                          {p.requirements?.stakeholders?.length ?? 0}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => { e.stopPropagation(); setOpen(p); }}
+                            style={{ color: "white", backgroundImage: g.bar }}
+                          >
+                            <Eye className="h-3.5 w-3.5 mr-1" /> View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -313,17 +343,13 @@ function Index() {
         )}
       </main>
 
-      <footer className="border-t border-border/60 mt-16 py-8 text-center text-xs text-muted-foreground">
-        Project Ideas Hub · A curated catalog for builders & educators
-      </footer>
-
       <Dialog open={!!open} onOpenChange={(v) => !v && setOpen(null)}>
         <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>{open?.name}</DialogTitle>
           </DialogHeader>
           <div className="p-6">
-            {open && <ProjectDetails project={open} />}
+            {open && <ProjectDetails project={open} gradient={gradientFor(open.id ?? open.name)} />}
           </div>
         </DialogContent>
       </Dialog>
