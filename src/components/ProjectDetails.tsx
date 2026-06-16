@@ -20,11 +20,14 @@ const impactIcons = {
   technological: Cpu,
 } as const;
 
-export function ProjectDetails({ project }: { project: Project & { dateAdded: string } }) {
+type Gradient = { bar: string; text: string; ring: string };
+
+export function ProjectDetails({ project, gradient }: { project: Project & { dateAdded: string }; gradient?: Gradient }) {
+  const g: Gradient = gradient ?? { bar: "linear-gradient(90deg,#6366f1,#ec4899)", text: "linear-gradient(90deg,#6366f1,#ec4899)", ring: "rgba(99,102,241,0.35)" };
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
       {/* Header */}
-      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "var(--gradient-brand)" }}>
+      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ backgroundImage: g.bar }}>
         <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <h2 className="text-3xl font-bold tracking-tight">{project.name}</h2>
         <div className="mt-3 flex flex-wrap gap-1.5">
