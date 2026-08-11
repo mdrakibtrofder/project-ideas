@@ -37,9 +37,9 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Project Ideas Hub — Real-World Project Briefs" },
+      { title: "Project Ideas — Real-World Project Briefs" },
       { name: "description", content: "Searchable hub of fully-specified project ideas across AI, web, mobile, security, databases and more — for teachers, students and builders." },
-      { property: "og:title", content: "Project Ideas Hub" },
+      { property: "og:title", content: "Project Ideas" },
       { property: "og:description", content: "Browse curated, course-aligned project briefs." },
     ],
   }),

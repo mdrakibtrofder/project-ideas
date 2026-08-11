@@ -13,7 +13,7 @@ export function SiteHeader() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-base font-semibold gradient-text">Project Ideas Hub</span>
+            <span className="text-base font-semibold gradient-text">Project Ideas</span>
             <span className="text-[11px] text-muted-foreground">For learners, teachers & builders</span>
           </div>
         </Link>
