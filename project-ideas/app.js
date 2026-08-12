@@ -42,6 +42,7 @@
     page: 1,
     pageSize: 24,
     open: null,
+    _totalPages: 1,
   };
 
   const icons = {
@@ -133,7 +134,7 @@
       const active = state.track === t;
       const btn = el("button", {
         class: "track-btn" + (active ? " track-btn-active" : ""),
-        onclick: () => { state.track = t; state.page = 1; renderAll(); },
+        "data-track": t,
       }, t);
       container.appendChild(btn);
     });
@@ -146,7 +147,7 @@
       const active = state.selectedTags.includes(t);
       const btn = el("button", {
         class: "tag-btn" + (active ? " active" : ""),
-        onclick: () => toggleTag(t),
+        "data-tag-toggle": t,
       }, t);
       container.appendChild(btn);
     });
@@ -167,7 +168,7 @@
     state.selectedTags.forEach(t => {
       const btn = el("button", {
         class: "active-tag",
-        onclick: () => toggleTag(t),
+        "data-active-tag": t,
       }, [t, el("span", { html: icons.close })]);
       container.appendChild(btn);
     });
@@ -223,27 +224,28 @@
     }
     const prev = el("button", {
       class: "pager-btn",
+      "data-pager-action": "prev",
       disabled: page <= 1,
-      onclick: () => { state.page = page - 1; renderResults(); },
     }, "Prev");
     container.appendChild(prev);
 
-    pages.forEach((p, i) => {
-      if (p === "…") {
+    pages.forEach((pageNum, i) => {
+      if (pageNum === "…") {
         container.appendChild(el("span", { class: "pager-ellipsis" }, "…"));
       } else {
-        const active = p === page;
+        const active = pageNum === page;
         container.appendChild(el("button", {
           class: "pager-btn" + (active ? " pager-btn-active" : ""),
-          onclick: () => { state.page = p; renderResults(); },
-        }, String(p)));
+          "data-pager-action": "goto",
+          "data-page-number": String(pageNum),
+        }, String(pageNum)));
       }
     });
 
     const next = el("button", {
       class: "pager-btn",
+      "data-pager-action": "next",
       disabled: page >= totalPages,
-      onclick: () => { state.page = page + 1; renderResults(); },
     }, "Next");
     container.appendChild(next);
   }
@@ -371,6 +373,7 @@
   function renderResults() {
     const filtered = getFiltered();
     const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+    state._totalPages = totalPages;
     const safePage = Math.min(state.page, totalPages);
     const slice = filtered.slice((safePage - 1) * state.pageSize, safePage * state.pageSize);
 
@@ -651,6 +654,65 @@
     document.getElementById("clear-empty").addEventListener("click", clearAll);
   }
 
+  function setupDelegatedEvents() {
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      const pagerAction = btn.getAttribute("data-pager-action");
+      if (pagerAction) {
+        e.preventDefault();
+        if (btn.hasAttribute("disabled")) return;
+        if (pagerAction === "prev") {
+          state.page = Math.max(1, state.page - 1);
+        } else if (pagerAction === "next") {
+          state.page = Math.min(state._totalPages, state.page + 1);
+        } else if (pagerAction === "goto") {
+          const n = parseInt(btn.getAttribute("data-page-number"), 10);
+          if (!isNaN(n)) state.page = Math.min(Math.max(1, n), state._totalPages);
+        }
+        renderResults();
+        document.getElementById("explore").scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+
+      const track = btn.getAttribute("data-track");
+      if (track) {
+        state.track = track;
+        state.page = 1;
+        renderAll();
+        return;
+      }
+
+      const tagToggle = btn.getAttribute("data-tag-toggle");
+      if (tagToggle) {
+        toggleTag(tagToggle);
+        return;
+      }
+
+      const activeTagRemove = btn.getAttribute("data-active-tag");
+      if (activeTagRemove) {
+        toggleTag(activeTagRemove);
+        return;
+      }
+
+      const view = btn.getAttribute("data-view");
+      if (view) {
+        state.view = view;
+        renderViewTabs();
+        renderResults();
+        return;
+      }
+
+      const projectId = btn.getAttribute("data-project-id");
+      if (projectId !== null) {
+        const p = PROJECTS.find(x => x.id === projectId);
+        if (p) openProject(p);
+        return;
+      }
+    });
+  }
+
   function renderAll() {
     renderTrackButtons();
     renderAllTags();
@@ -661,6 +723,7 @@
   }
 
   function init() {
+    setupDelegatedEvents();
     setupSearch();
     setupTagsPopover();
     setupViewTabs();
